@@ -1,0 +1,37 @@
+# This work is used to scrapped data from Beijing Carbon Trade System
+from urllib.request import urlopen
+from bs4 import BeautifulSoup as bs
+import xlsxwriter
+import re
+
+# Scraping and beautifulsouping
+url = 'http://www.bjets.com.cn/article/jyxx/?'
+html = urlopen(url)
+draft = bs(html, 'html.parser')
+data = draft.findAll('td')
+
+# Preliminery works
+def get_total_page(html):
+    text_extracted = draft.find(text=re.compile('totalpage'))
+    return int(re.compile('\d+').findall(text_extracted)[1])
+current_page = 1
+total_page = get_total_page(draft)
+workbook = xlsxwriter.Workbook('carbon_trade_data.xlsx')
+worksheet = workbook.add_worksheet()
+row = 0
+col = 0
+
+# Reading and writing to Excel
+while current_page <= total_page:
+    for item in data:
+        worksheet.write(row, col, item.get_text())
+        col += 1
+        if col % 4 == 0:
+            row += 1
+            col = 0
+    current_page += 1
+    new_url = 'http://www.bjets.com.cn/article/jyxx/?' + str(current_page)
+    html = urlopen(new_url)
+    draft = bs(html, 'html.parser')
+    data = draft.findAll('td')
+workbook.close()
